@@ -7,7 +7,7 @@
 #PBS -l jobfs=100GB
 #PBS -l walltime=48:00:00
 #PBS -l wd
-#PBS -N channel-3d
+#PBS -N bca-2d
 #PBS -W umask=027
 #PBS -l storage=gdata/v45+gdata/hh5+gdata/x77+scratch/v45+scratch/x77
 
@@ -21,6 +21,6 @@ export JULIA_NUM_THREADS=48
 module load cuda/11.0.3
 
 # Run Julia
-cd /g/data/v45/nc3020/mesoscale-parametrization-OSM2022/eddying_channel
+cd /g/data/v45/nc3020/mesoscale-parametrization-OSM2022/zonally_averaged_baroclinic_adjustment
 
-/g/data/v45/nc3020/julia/julia --color=yes --project eddying_channel_catke.jl > $PBS_JOBID.log
+/g/data/v45/nc3020/julia/julia --color=yes --project zonally_averaged_baroclinic_adjustment.jl  > $PBS_JOBID.log

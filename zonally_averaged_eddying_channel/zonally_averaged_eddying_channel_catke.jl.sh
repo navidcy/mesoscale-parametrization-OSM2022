@@ -7,7 +7,7 @@
 #PBS -l jobfs=100GB
 #PBS -l walltime=48:00:00
 #PBS -l wd
-#PBS -N channel-gm-catke
+#PBS -N channel-2d
 #PBS -W umask=027
 #PBS -l storage=gdata/v45+gdata/hh5+gdata/x77+scratch/v45+scratch/x77
 
