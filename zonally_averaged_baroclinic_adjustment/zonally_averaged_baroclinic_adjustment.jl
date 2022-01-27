@@ -179,7 +179,9 @@ simulation.output_writers[:fields] = JLD2OutputWriter(model, outputs,
 
 run!(simulation, pickup=false)
 
-@info "Simulation completed in " * prettytime(simulation.run_time)
+@info "Simulation completed in " * prettytime(simulation.run_wall_time)
+
+#=
 
 #####
 ##### Visualize
@@ -252,3 +254,5 @@ record(fig, filename * ".mp4", 1:Nt, framerate=8) do i
     @info "Plotting frame $i of $Nt"
     n[] = i
 end
+
+=#

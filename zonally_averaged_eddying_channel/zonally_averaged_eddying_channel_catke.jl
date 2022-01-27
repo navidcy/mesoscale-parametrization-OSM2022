@@ -280,6 +280,8 @@ simulation.output_writers[:fields] = JLD2OutputWriter(model, outputs,
 
 run!(simulation, pickup=false)
 
+@info "Simulation completed in " * prettytime(simulation.run_wall_time)
+
 #=
 #####
 ##### Visualization

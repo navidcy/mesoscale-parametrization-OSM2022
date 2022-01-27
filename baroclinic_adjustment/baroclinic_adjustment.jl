@@ -202,6 +202,8 @@ outputs = (; b, ζ, u, v, w)
 
 run!(simulation, pickup=false)
 
+@info "Simulation completed in " * prettytime(simulation.run_wall_time)
+
 #=
 @info "Simulation completed in " * prettytime(simulation.run_time)
 

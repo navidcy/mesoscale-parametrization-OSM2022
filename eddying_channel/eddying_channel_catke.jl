@@ -29,8 +29,8 @@ const Ly = 2000kilometers # meridional domain length [m]
 const Lz = 2kilometers    # depth [m]
 
 # number of grid points
-Nx = 200
-Ny = 400
+Nx = 100
+Ny = 200
 Nz = 80
 
 save_fields_interval = 7days
@@ -290,6 +290,8 @@ simulation.output_writers[:averages] = JLD2OutputWriter(model, averaged_outputs,
 @info "Running the simulation..."
 
 run!(simulation, pickup=false)
+
+@info "Simulation completed in " * prettytime(simulation.run_wall_time)
 
 #=
 #####
