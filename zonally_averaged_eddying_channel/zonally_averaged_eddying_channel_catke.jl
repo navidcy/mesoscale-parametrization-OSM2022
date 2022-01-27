@@ -20,7 +20,6 @@ Random.seed!(1234)
 filename = "zonally_averaged_eddying_channel_catke_withGM"
 
 # Domain
-const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
 const Lz = 2kilometers    # depth [m]
 

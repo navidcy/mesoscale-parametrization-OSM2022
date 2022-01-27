@@ -55,7 +55,7 @@ grid = RectilinearGrid(arch;
                        halo = (3, 3, 3),
                        x = (0, Lx),
                        y = (-Ly/2, Ly/2),
-                       z_faces = linearly_spaced_faces)
+                       z = (-Lz, 0)) #linearly_spaced_faces)
 
 # The vertical spacing versus depth for the prescribed grid
 #=
