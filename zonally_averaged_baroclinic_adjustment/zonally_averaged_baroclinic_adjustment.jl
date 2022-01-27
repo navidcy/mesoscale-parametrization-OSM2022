@@ -162,7 +162,6 @@ using Oceananigans.TurbulenceClosures: ∇_dot_qᶜ
 
 ∇_q_op = KernelFunctionOperation{Center, Center, Center}(∇_dot_qᶜ,
                                                          grid,
-                                                         architecture = model.architecture,
                                                          computed_dependencies = dependencies)
 
 # R(b) eg the Redi operator applied to buoyancy
