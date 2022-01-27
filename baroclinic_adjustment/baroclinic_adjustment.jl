@@ -10,6 +10,11 @@ using Oceananigans.Units
 using Oceananigans.Models.HydrostaticFreeSurfaceModels: fields
 using Oceananigans.TurbulenceClosures: VerticallyImplicitTimeDiscretization
 
+using Random
+Random.seed!(1234)
+
+arch = GPU()
+
 filename = "baroclinic_adjustment"
 
 # Domain
@@ -25,13 +30,13 @@ save_fields_interval = 0.2day
 stop_time = 80days
 Δt₀ = 5minutes
 
-grid = RegularRectilinearGrid(arch;
-                              topology = (Periodic, Bounded, Bounded), 
-                              size = (Nx, Ny, Nz), 
-                              x = (0, Lx),
-                              y = (-Ly/2, Ly/2),
-                              z = (-Lz, 0),
-                              halo = (3, 3, 3))
+grid = RectilinearGrid(arch;
+                       topology = (Periodic, Bounded, Bounded), 
+                       size = (Nx, Ny, Nz), 
+                       x = (0, Lx),
+                       y = (-Ly/2, Ly/2),
+                       z = (-Lz, 0),
+                       halo = (3, 3, 3))
 
 coriolis = BetaPlane(latitude=-45)
 

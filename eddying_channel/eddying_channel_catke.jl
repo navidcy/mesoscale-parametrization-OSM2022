@@ -17,6 +17,8 @@ using Oceananigans.Grids: xnode, ynode, znode
 using Random
 Random.seed!(1234)
 
+arch = GPU()
+
 filename = "eddying_channel_catke"
 
 # Domain
@@ -47,13 +49,13 @@ arch = GPU()
 Δz_center_linear(k) = Lz * (σ - 1) * σ^(Nz - k) / (σ^Nz - 1) # k=1 is the bottom-most cell, k=Nz is the top cell
 linearly_spaced_faces(k) = k==1 ? -Lz : - Lz + sum(Δz_center_linear.(1:k-1))
 
-grid = RegularRectilinearGrid(arch;
-                              topology = (Periodic, Bounded, Bounded),
-                              size = (Nx, Ny, Nz),
-                              halo = (3, 3, 3),
-                              x = (0, Lx),
-                              y = (-Ly/2, Ly/2),
-                              z_faces = linearly_spaced_faces)
+grid = RectilinearGrid(arch;
+                       topology = (Periodic, Bounded, Bounded),
+                       size = (Nx, Ny, Nz),
+                       halo = (3, 3, 3),
+                       x = (0, Lx),
+                       y = (-Ly/2, Ly/2),
+                       z_faces = linearly_spaced_faces)
 
 # The vertical spacing versus depth for the prescribed grid
 #=
