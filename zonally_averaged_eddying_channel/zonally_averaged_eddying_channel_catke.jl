@@ -143,7 +143,11 @@ Fb = Forcing(buoyancy_relaxation, discrete_form = true, parameters = parameters)
 κz = 0.5e-5 # [m²/s] vertical diffusivity
 νz = 3e-4   # [m²/s] vertical viscocity
 
-horizontal_diffusivity = AnisotropicDiffusivity(νh=νh, νz=νz, κh=κh, κz=κz)
+horizontal_diffusivity = AnisotropicDiffusivity(νh = νh,
+                                                νz = νz,
+                                                κh = κh,
+                                                κz = κz,
+                                                time_discretization = VerticallyImplicitTimeDiscretization())
 
 convective_adjustment = ConvectiveAdjustmentVerticalDiffusivity(convective_κz = 1.0,
                                                                 convective_νz = 0.0)

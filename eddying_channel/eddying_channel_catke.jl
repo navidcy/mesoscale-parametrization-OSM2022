@@ -1,8 +1,9 @@
 # using Pkg
 # pkg"add Oceananigans CairoMakie JLD2"
-# ENV["GKSwstype"] = "100"
 # pushfirst!(LOAD_PATH, @__DIR__)
 # pushfirst!(LOAD_PATH, joinpath(@__DIR__, "..", "..")) # add Oceananigans
+
+ENV["GKSwstype"] = "100"
 
 using Printf
 using Statistics
@@ -46,13 +47,13 @@ arch = GPU()
 Δz_center_linear(k) = Lz * (σ - 1) * σ^(Nz - k) / (σ^Nz - 1) # k=1 is the bottom-most cell, k=Nz is the top cell
 linearly_spaced_faces(k) = k==1 ? -Lz : - Lz + sum(Δz_center_linear.(1:k-1))
 
-grid = VerticallyStretchedRectilinearGrid(architecture = arch,
-                                          topology = (Periodic, Bounded, Bounded),
-                                          size = (Nx, Ny, Nz),
-                                          halo = (3, 3, 3),
-                                          x = (0, Lx),
-                                          y = (0, Ly),
-                                          z_faces = linearly_spaced_faces)
+grid = RegularRectilinearGrid(arch;
+                              topology = (Periodic, Bounded, Bounded),
+                              size = (Nx, Ny, Nz),
+                              halo = (3, 3, 3),
+                              x = (0, Lx),
+                              y = (-Ly/2, Ly/2),
+                              z_faces = linearly_spaced_faces)
 
 # The vertical spacing versus depth for the prescribed grid
 #=
@@ -143,7 +144,11 @@ Fb = Forcing(buoyancy_relaxation, discrete_form = true, parameters = parameters)
 κz = 0.5e-5 # [m²/s] vertical diffusivity
 νz = 3e-4   # [m²/s] vertical viscocity
 
-horizontal_diffusivity = AnisotropicDiffusivity(νh=νh, νz=νz, κh=κh, κz=κz)
+horizontal_diffusivity = AnisotropicDiffusivity(νh = νh,
+                                                νz = νz,
+                                                κh = κh,
+                                                κz = κz,
+                                                time_discretization = VerticallyImplicitTimeDiscretization())
 
 convective_adjustment = ConvectiveAdjustmentVerticalDiffusivity(convective_κz = 1.0,
                                                                 convective_νz = 0.0)
@@ -175,7 +180,8 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
 
 # resting initial condition
 ε(σ) = σ * randn()
-bᵢ(x, y, z) = parameters.ΔB * ( exp(z/parameters.h) - exp(-Lz/parameters.h) ) / (1 - exp(-Lz/parameters.h)) + ε(1e-8)
+bᵢ(x, y, z) = parameters.ΔB * ( exp(z / parameters.h) - exp(-Lz / parameters.h) ) / (1 - exp(-Lz / parameters.h)) + ε(1e-8)
+cᵢ(x, y, z) = exp(-(y - Ly/2)^2 / 2Δc^2) * exp(-(z + Lz/4)^2 / 2Δz^2)
 uᵢ(x, y, z) = ε(1e-8)
 vᵢ(x, y, z) = ε(1e-8)
 wᵢ(x, y, z) = ε(1e-8)
@@ -219,9 +225,10 @@ simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterv
 u, v, w = model.velocities
 b, c = model.tracers.b, model.tracers.c
 
-ζ = ComputedField(∂x(v) - ∂y(u))
+ζ = Field(∂x(v) - ∂y(u))
 
 B = Field(Average(b, dims=1))
+C = Field(Average(c, dims=1))
 U = Field(Average(u, dims=1))
 V = Field(Average(v, dims=1))
 W = Field(Average(w, dims=1))
@@ -231,9 +238,9 @@ v′ = v - V
 w′ = w - W
 
 v′b′ = Field(Average(v′ * b′, dims=1))
-w′b′ = Field(Average(vw′ * b′, dims=1))
+w′b′ = Field(Average(w′ * b′, dims=1))
 
-outputs = (; b, ζ, u, v, w)
+outputs = (; b, c, ζ, u, v, w)
 
 averaged_outputs = (; v′b′, w′b′, B, U)
 
