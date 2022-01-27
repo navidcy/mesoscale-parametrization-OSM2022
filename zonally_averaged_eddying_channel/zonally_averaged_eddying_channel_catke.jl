@@ -18,6 +18,8 @@ using Oceananigans.TurbulenceClosures: VerticallyImplicitTimeDiscretization
 using Random
 Random.seed!(1234)
 
+arch = GPU()
+
 filename = "zonally_averaged_eddying_channel_catke_withGM"
 
 # Domain
@@ -26,13 +28,12 @@ const Lz = 2kilometers    # depth [m]
 
 # number of grid points
 Nx = 1
-Ny = 400
+Ny = 200
 Nz = 80
 
 save_fields_interval = 7days
 stop_time = 20years
-
-arch = GPU()
+Δt₀ = 5minutes
 
 # stretched grid
 
@@ -203,8 +204,13 @@ set!(model, b=bᵢ, u=uᵢ, v=vᵢ, w=wᵢ, c=cᵢ)
 ##### Simulation building
 #####
 
-wizard = TimeStepWizard(cfl=0.1, max_change=1.1, max_Δt=20minutes)
+simulation = Simulation(model, Δt=Δt₀, stop_time=stop_time)
 
+# add timestep wizard callback
+wizard = TimeStepWizard(cfl=0.2, max_change=1.1, max_Δt=20minutes)
+simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(20))
+
+# add progress callback
 wall_clock = [time_ns()]
 
 function print_progress(sim)
@@ -223,10 +229,7 @@ function print_progress(sim)
     return nothing
 end
 
-simulation = Simulation(model, Δt=5minutes, stop_time=stop_time)
-
-# add progress callback
-simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(50))
+simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(100))
 
 
 #####

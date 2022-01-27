@@ -37,8 +37,6 @@ save_fields_interval = 7days
 stop_time = 20years
 Δt₀ = 5minutes
 
-arch = GPU()
-
 # stretched grid
 
 # we implement here a linearly streched grid in which the top grid cell has Δzₜₒₚ
@@ -197,8 +195,13 @@ set!(model, b=bᵢ, u=uᵢ, v=vᵢ, w=wᵢ)
 ##### Simulation building
 #####
 
+simulation = Simulation(model, Δt=Δt₀, stop_time=stop_time)
 
+# add timestep wizard callback
+wizard = TimeStepWizard(cfl=0.2, max_change=1.1, max_Δt=20minutes)
+simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(20))
 
+# add progress callback
 wall_clock = [time_ns()]
 
 function print_progress(sim)
@@ -217,13 +220,6 @@ function print_progress(sim)
     return nothing
 end
 
-simulation = Simulation(model, Δt=Δt₀, stop_time=stop_time)
-
-# add timestep wizard callback
-wizard = TimeStepWizard(cfl=0.2, max_change=1.1, max_Δt=20minutes)
-simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(20))
-
-# add progress callback
 simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(100))
 
 
