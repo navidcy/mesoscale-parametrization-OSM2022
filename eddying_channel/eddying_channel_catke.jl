@@ -13,6 +13,7 @@ using Oceananigans
 using Oceananigans.Units
 using Oceananigans.OutputReaders: FieldTimeSeries
 using Oceananigans.Grids: xnode, ynode, znode
+using Oceananigans.TurbulenceClosures: VerticallyImplicitTimeDiscretization
 
 using Random
 Random.seed!(1234)
