@@ -54,7 +54,7 @@ horizontal_diffusivity = AnisotropicDiffusivity(νh = νh,
 convective_adjustment = ConvectiveAdjustmentVerticalDiffusivity(convective_κz = 1.0,
                                                                 convective_νz = 0.0)
 
-gerdes_koberle_willebrand_tapering = Oceananigans.TurbulenceClosures.FluxTapering(1e-2)
+gerdes_koberle_willebrand_tapering = Oceananigans.TurbulenceClosures.FluxTapering(1e-1)
 
 gent_mcwilliams_diffusivity = IsopycnalSkewSymmetricDiffusivity(κ_skew = 1000,
                                                                 κ_symmetric = 900,
@@ -68,11 +68,11 @@ gent_mcwilliams_diffusivity = IsopycnalSkewSymmetricDiffusivity(κ_skew = 1000,
 model = HydrostaticFreeSurfaceModel(grid = grid,
                                     coriolis = coriolis,
                                     buoyancy = BuoyancyTracer(),
-                                    closure = (horizontal_diffusivity, gent_mcwilliams_diffusivity),
+                                    closure = (horizontal_diffusivity, convective_adjustment, gent_mcwilliams_diffusivity),
                                     tracers = (:b, :c),
                                     momentum_advection = WENO5(),
                                     tracer_advection = WENO5(),
-                                    free_surface = ImplicitFreeSurface(solver_method = :HeptadiagonalIterativeSolver))
+                                    free_surface = ImplicitFreeSurface())
 
 @info "Built $model."
 
@@ -114,8 +114,8 @@ set!(model, b=bᵢ, c=cᵢ)
 simulation = Simulation(model, Δt=Δt₀, stop_time=stop_time)
 
 # add timestep wizard callback
-wizard = TimeStepWizard(cfl=0.1, max_change=1.1, max_Δt=20minutes)
-simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(50))
+wizard = TimeStepWizard(cfl=0.1, max_change=1.1, max_Δt=15minutes)
+simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(20))
 
 # add progress callback
 wall_clock = [time_ns()]
@@ -136,7 +136,7 @@ function print_progress(sim)
     return nothing
 end
 
-simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(50))
+simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
 
 #####
@@ -252,5 +252,3 @@ record(fig, filename * ".mp4", 1:Nt, framerate=8) do i
     @info "Plotting frame $i of $Nt"
     n[] = i
 end
-
-=#
