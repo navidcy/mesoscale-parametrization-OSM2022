@@ -181,7 +181,7 @@ run!(simulation, pickup=false)
 
 @info "Simulation completed in " * prettytime(simulation.run_wall_time)
 
-#=
+
 
 #####
 ##### Visualize
@@ -224,7 +224,7 @@ min_u = - max_u
 @show max_r = maximum(abs, rn(Nt))
 @show min_r = - max_r
 
-n = Node(1)
+n = Observable(1)
 u = @lift un($n)
 b = @lift bn($n)
 c = @lift cn($n)

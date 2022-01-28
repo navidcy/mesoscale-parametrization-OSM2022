@@ -217,7 +217,7 @@ ax_c = fig[1:5, 2] = LScene(fig)
 
 # Extract surfaces on all 6 boundaries
 
-iter = Node(0)
+iter = Observable(0)
 sides = keys(slicers)
 
 zonal_file = jldopen("baroclinic_adj_zonal_average.jld2")
