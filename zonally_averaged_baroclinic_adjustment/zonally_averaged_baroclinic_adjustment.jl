@@ -45,11 +45,11 @@ coriolis = BetaPlane(latitude = -45)
 κz = 𝒜 * κh # [m² s⁻¹] vertical diffusivity
 νz = 𝒜 * νh # [m² s⁻¹] vertical viscosity
 
-diffusive_closure = AnisotropicDiffusivity(νh = νh,
-                                           νz = νz,
-                                           κh = κh,
-                                           κz = κz,
-					                       time_discretization = VerticallyImplicitTimeDiscretization())
+horizontal_diffusivity = AnisotropicDiffusivity(νh = νh,
+                                                νz = νz,
+                                                κh = κh,
+                                                κz = κz,
+					                            time_discretization = VerticallyImplicitTimeDiscretization())
 
 convective_adjustment = ConvectiveAdjustmentVerticalDiffusivity(convective_κz = 1.0,
                                                                 convective_νz = 0.0)
@@ -65,12 +65,10 @@ gent_mcwilliams_diffusivity = IsopycnalSkewSymmetricDiffusivity(κ_skew = 1000,
 
 @info "Building a model..."
 
-closures = (diffusive_closure, convective_adjustment, gent_mcwilliams_diffusivity)
-
 model = HydrostaticFreeSurfaceModel(grid = grid,
                                     coriolis = coriolis,
                                     buoyancy = BuoyancyTracer(),
-                                    closure = closures,
+                                    closure = (horizontal_diffusivity, gent_mcwilliams_diffusivity),
                                     tracers = (:b, :c),
                                     momentum_advection = WENO5(),
                                     tracer_advection = WENO5(),
