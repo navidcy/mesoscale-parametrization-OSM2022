@@ -205,12 +205,17 @@ run!(simulation, pickup=false)
 ##### Visualize
 #####
 
-ENV["GKSwstype"] = "100"
-using CairoMakie, Oceananigans, JLD2
+#=
+# ENV["GKSwstype"] = "100"
+# using CairoMakie
 
-filename = "baroclinic_adjustment"
+using GLMakie
 
-fig = Figure(resolution = (1400, 800))
+using Oceananigans, JLD2
+
+filename = "double-rees/baroclinic_adjustment"
+
+fig = Figure(resolution = (3000, 1600))
 
 ax_b = fig[1:5, 1] = LScene(fig)
 ax_c = fig[1:5, 2] = LScene(fig)
@@ -259,7 +264,7 @@ b_slices = (
        top = @lift(Array(slice_files.top["timeseries/b/"    * string($iter)][:, :, 1]))
 )
 
-clims_b = @lift extrema(slice_files.west["timeseries/b/" * string($iter)][:])
+clims_b = @lift 1.1 .* extrema(slice_files.top["timeseries/b/" * string($iter)][:])
 kwargs_b = (colorrange=clims_b, colormap=:balance, show_axis=false)
 
 surface!(ax_b, y, z, b_slices.west;   transformation = (:yz, x[1]),   kwargs_b...)
@@ -316,9 +321,9 @@ rotate_cam!(ax_c.scene, axis_rotation_angles)
 #####
 
 title = @lift(string("Buoyancy and tracer concentration at t = ",
-                     prettytime(slice_files[1]["timeseries/t/" * string($iter)])))
+                     string(slice_files[1]["timeseries/t/" * string($iter)]/day), " days"))
 
-fig[0, :] = Label(fig, title, textsize=30)
+fig[0, :] = Label(fig, title, textsize=60)
 
 
 iterations = parse.(Int, keys(slice_files[1]["timeseries/t"]))
@@ -336,3 +341,4 @@ for file in slice_files
 end
 
 close(zonal_file)
+=#
