@@ -171,7 +171,7 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
                                     buoyancy = BuoyancyTracer(),
                                     coriolis = coriolis,
                                     closure = (convective_adjustment, horizontal_diffusivity),
-                                    tracers = (:b, :e, :c),
+                                    tracers = (:b, :c),
                                     boundary_conditions = (b=b_bcs, u=u_bcs, v=v_bcs),
                                     forcing = (; b=Fb))
 
