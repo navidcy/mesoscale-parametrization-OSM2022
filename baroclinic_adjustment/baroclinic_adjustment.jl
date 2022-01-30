@@ -1,5 +1,3 @@
-ENV["GKSwstype"] = "100"
-
 using Printf
 using Statistics
 using Random
@@ -22,9 +20,9 @@ Lx = 4000kilometers # east-west extent [m]
 Ly = 1000kilometers # north-south extent [m]
 Lz = 1kilometers    # depth [m]
 
-Nx = 512
-Ny = 128
-Nz = 40
+Nx = 1024
+Ny = 256
+Nz = 80
 
 save_fields_interval = 0.5day
 stop_time = 80days
@@ -38,7 +36,7 @@ grid = RectilinearGrid(arch;
                        z = (-Lz, 0),
                        halo = (3, 3, 3))
 
-coriolis = BetaPlane(latitude=-45)
+coriolis = BetaPlane(latitude = -45)
 
 Δx, Δy, Δz = Lx/Nx, Ly/Ny, Lz/Nz
 
@@ -196,8 +194,6 @@ simulation.output_writers[:zonal] = JLD2OutputWriter(model, (b=B, c=C, u=U, v=V,
                                                      prefix = filename * "_zonal_average",
                                                      force = true)
 
-outputs = (; b, ζ, u, v, w)
-
 @info "Running the simulation..."
 
 run!(simulation, pickup=false)
@@ -209,21 +205,36 @@ run!(simulation, pickup=false)
 ##### Visualize
 #####
 
-using CairoMakie
+ENV["GKSwstype"] = "100"
+using CairoMakie, Oceananigans, JLD2
 
-fig = Figure(resolution = (1400, 700))
+filename = "baroclinic_adjustment"
+
+fig = Figure(resolution = (1400, 800))
+
 ax_b = fig[1:5, 1] = LScene(fig)
 ax_c = fig[1:5, 2] = LScene(fig)
+
+axis_rotation_angles = (π/24, -π/6, 0)
+
 
 # Extract surfaces on all 6 boundaries
 
 iter = Observable(0)
-sides = keys(slicers)
 
 zonal_file = jldopen(filename * "_zonal_average.jld2")
-slice_files = NamedTuple(side => jldopen(filename * "_$(side)_slice.jld2") for side in sides)
+grid = zonal_file["serialized/grid"]
 
-grid = slice_files[1]["serialized/grid"]
+slicers = (west = FieldSlicer(i=1),
+           east = FieldSlicer(i=grid.Nx),
+           south = FieldSlicer(j=1),
+           north = FieldSlicer(j=grid.Ny),
+           bottom = FieldSlicer(k=1),
+           top = FieldSlicer(k=grid.Nz))
+
+sides = keys(slicers)
+
+slice_files = NamedTuple(side => jldopen(filename * "_$(side)_slice.jld2") for side in sides)
 
 # Build coordinates, rescaling the vertical coordinate
 x, y, z = nodes((Center, Center, Center), grid)
@@ -248,7 +259,7 @@ b_slices = (
        top = @lift(Array(slice_files.top["timeseries/b/"    * string($iter)][:, :, 1]))
 )
 
-clims_b = @lift extrema(slice_files.top["timeseries/b/" * string($iter)][:])
+clims_b = @lift extrema(slice_files.west["timeseries/b/" * string($iter)][:])
 kwargs_b = (colorrange=clims_b, colormap=:balance, show_axis=false)
 
 surface!(ax_b, y, z, b_slices.west;   transformation = (:yz, x[1]),   kwargs_b...)
@@ -263,10 +274,10 @@ u_avg = @lift zonal_file["timeseries/u/" * string($iter)][1, :, :]
 
 clims_u = @lift extrema(zonal_file["timeseries/u/" * string($iter)][1, :, :])
 
-contour!(ax_b, y, z, b_avg; levels = 25, linewidth=2, color=:black, transformation = (:yz, zonal_slice_displacement * x[end]), show_axis=false)
-surface!(ax_b, y, z, u_avg; transformation = (:yz, zonal_slice_displacement * x[end]), colorrange=clims_u, colormap=:balance)
+surface!(ax_b, y, z, b_avg; transformation = (:yz, zonal_slice_displacement * x[end]), colorrange=clims_b, colormap=:balance)
+contour!(ax_b, y, z, b_avg; levels = 15, linewidth=2, color=:black, transformation = (:yz, zonal_slice_displacement * x[end]), show_axis=false)
 
-rotate_cam!(ax_b.scene, (π/24, -π/6, 0))
+rotate_cam!(ax_b.scene, axis_rotation_angles)
 
 #####
 ##### Plot tracer...
@@ -281,7 +292,7 @@ c_slices = (
        top = @lift(Array(slice_files.top["timeseries/c/"    * string($iter)][:, :, 1]))
 )
 
-clims_c = @lift extrema(slice_files.top["timeseries/c/" * string($iter)][:])
+clims_c = @lift extrema(slice_files.west["timeseries/c/" * string($iter)][:])
 clims_c = (0, 0.5)
 kwargs_c = (colorrange=clims_c, colormap=:deep, show_axis=false)
 
@@ -295,10 +306,10 @@ surface!(ax_c, x, y, c_slices.top;    transformation = (:xy, z[end]), kwargs_c..
 b_avg = @lift zonal_file["timeseries/b/" * string($iter)][1, :, :]
 c_avg = @lift zonal_file["timeseries/c/" * string($iter)][1, :, :]
 
-contour!(ax_c, y, z, b_avg; levels = 25, linewidth=2, color=:black, transformation = (:yz, zonal_slice_displacement * x[end]), show_axis=false)
 surface!(ax_c, y, z, c_avg; transformation = (:yz, zonal_slice_displacement * x[end]), colorrange=clims_c, colormap=:deep)
+contour!(ax_c, y, z, b_avg; levels = 15, linewidth=2, color=:black, transformation = (:yz, zonal_slice_displacement * x[end]), show_axis=false)
 
-rotate_cam!(ax_c.scene, (π/24, -π/6, 0))
+rotate_cam!(ax_c.scene, axis_rotation_angles)
 
 #####
 ##### Make title and animate
@@ -312,12 +323,13 @@ fig[0, :] = Label(fig, title, textsize=30)
 
 iterations = parse.(Int, keys(slice_files[1]["timeseries/t"]))
 
+# display(fig)
+
 record(fig, filename * ".mp4", iterations, framerate=8) do i
     @info "Plotting iteration $i of $(iterations[end])..."
     iter[] = i
 end
 
-display(fig)
 
 for file in slice_files
     close(file)
