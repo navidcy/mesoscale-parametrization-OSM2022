@@ -161,11 +161,11 @@ Fb = Forcing(buoyancy_relaxation, discrete_form = true, parameters = parameters)
 κz = 0.5e-5 # [m²/s] vertical diffusivity
 νz = 3e-4   # [m²/s] vertical viscocity
 
-horizontal_diffusivity = AnisotropicDiffusivity(νh = νh,
-                                                νz = νz,
-                                                κh = κh,
-                                                κz = κz,
-                                                time_discretization = VerticallyImplicitTimeDiscretization())
+diffusive_closure = AnisotropicDiffusivity(νh = νh,
+                                           νz = νz,
+                                           κh = κh,
+                                           κz = κz,
+					                       time_discretization = VerticallyImplicitTimeDiscretization())
 
 convective_adjustment = ConvectiveAdjustmentVerticalDiffusivity(convective_κz = 1.0,
                                                                 convective_νz = 0.0)
@@ -184,7 +184,7 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
                                     tracer_advection = WENO5(),
                                     buoyancy = BuoyancyTracer(),
                                     coriolis = coriolis,
-                                    closure = (catke, horizontal_diffusivity),
+                                    closure = (catke, diffusive_closure),
                                     tracers = (:b, :e, :c),
                                     boundary_conditions = (b=b_bcs, u=u_bcs, v=v_bcs),
                                     forcing = (; b=Fb))
