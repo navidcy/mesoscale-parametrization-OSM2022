@@ -71,7 +71,7 @@ grid = RectilinearGrid(arch;
                        halo = (3, 3, 3),
                        x = (0, Lx),
                        y = (-Ly/2, Ly/2),
-                       z = z_faces)
+                       z = (-Lz, 0)) # z_faces)
 
 # The vertical spacing versus depth for the prescribed grid
 # using GLMakie
@@ -94,7 +94,7 @@ parameters = (Ly = Ly,
               Lz = Lz,
               Qᵇ = 10 / (ρ * cᵖ) * α * g,          # buoyancy flux magnitude [m² s⁻³]    
               y_shutoff = 5/6 * Ly,                # shutoff location for buoyancy flux [m]
-              τ = 0.2/ρ,                           # surface kinematic wind stress [m² s⁻²]
+              τ = 0.15/ρ,                          # surface kinematic wind stress [m² s⁻²]
               μ = 1 / 30days,                      # bottom drag damping time-scale [s⁻¹]
               ΔB = 8 * α * g,                      # surface vertical buoyancy gradient [s⁻²]
               H = Lz,                              # domain depth [m]
@@ -180,8 +180,8 @@ catke = CATKEVerticalDiffusivity()
 
 model = HydrostaticFreeSurfaceModel(grid = grid,
                                     free_surface = ImplicitFreeSurface(solver_method = :HeptadiagonalIterativeSolver),
-                                    momentum_advection = WENO5(grid = grid, stretched_smoothness = true),
-                                    tracer_advection = WENO5(grid = grid, stretched_smoothness = true),
+                                    momentum_advection = WENO5(),
+                                    tracer_advection = WENO5(),
                                     buoyancy = BuoyancyTracer(),
                                     coriolis = coriolis,
                                     closure = (convective_adjustment, horizontal_diffusivity),
