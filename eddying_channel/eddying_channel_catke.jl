@@ -95,7 +95,7 @@ parameters = (Ly = Ly,
               Qᵇ = 10 / (ρ * cᵖ) * α * g,          # buoyancy flux magnitude [m² s⁻³]    
               y_shutoff = 5/6 * Ly,                # shutoff location for buoyancy flux [m]
               τ = 0.15/ρ,                          # surface kinematic wind stress [m² s⁻²]
-              μ = 1 / 30days,                      # bottom drag damping time-scale [s⁻¹]
+              μ = 1 / 15days,                      # bottom drag damping time-scale [s⁻¹]
               ΔB = 8 * α * g,                      # surface vertical buoyancy gradient [s⁻²]
               H = Lz,                              # domain depth [m]
               h = 1000.0,                          # exponential decay scale of stable stratification [m]
@@ -184,8 +184,8 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
                                     tracer_advection = WENO5(),
                                     buoyancy = BuoyancyTracer(),
                                     coriolis = coriolis,
-                                    closure = (convective_adjustment, horizontal_diffusivity),
-                                    tracers = (:b, :c),
+                                    closure = (catke, horizontal_diffusivity),
+                                    tracers = (:b, :e, :c),
                                     boundary_conditions = (b=b_bcs, u=u_bcs, v=v_bcs),
                                     forcing = (; b=Fb))
 
