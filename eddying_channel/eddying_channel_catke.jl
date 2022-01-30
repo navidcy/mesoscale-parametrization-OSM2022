@@ -19,7 +19,7 @@ using Oceananigans.TurbulenceClosures.CATKEVerticalDiffusivities: CATKEVerticalD
 using Random
 Random.seed!(1234)
 
-arch = CPU()
+arch = GPU()
 
 filename = "eddying_channel_catke"
 
