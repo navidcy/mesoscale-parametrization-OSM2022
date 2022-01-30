@@ -71,13 +71,13 @@ plot(grid.Δzᵃᵃᶜ[1:Nz], grid.zᵃᵃᶜ[1:Nz],
 ##### Boundary conditions
 #####
 
-α  = 2e-4     # [K⁻¹] thermal expansion coefficient 
+α  = 2e-4     # [K⁻¹] thermal expansion coefficient
 g  = 9.8061   # [m s⁻²] gravitational constant
 cᵖ = 3994.0   # [J K⁻¹] heat capacity
 ρ  = 1024.0   # [kg m⁻³] reference density
 
-parameters = (Ly = Ly,  
-              Lz = Lz,    
+parameters = (Ly = Ly,
+              Lz = Lz,
               Qᵇ = 10 / (ρ * cᵖ) * α * g,          # buoyancy flux magnitude [m² s⁻³]    
               y_shutoff = 5/6 * Ly,                # shutoff location for buoyancy flux [m]
               τ = 0.2/ρ,                           # surface kinematic wind stress [m² s⁻²]
@@ -86,7 +86,7 @@ parameters = (Ly = Ly,
               H = Lz,                              # domain depth [m]
               h = 1000.0,                          # exponential decay scale of stable stratification [m]
               y_sponge = 19/20 * Ly,               # southern boundary of sponge layer [m]
-              λt = 7.0days                         # relaxation time scale [s]
+              λt = 7days                           # relaxation time scale [s]
 )
 
 @inline function buoyancy_flux(i, j, grid, clock, model_fields, p)
@@ -170,7 +170,7 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
                                     tracer_advection = WENO5(),
                                     buoyancy = BuoyancyTracer(),
                                     coriolis = coriolis,
-                                    closure = (catke, horizontal_diffusivity),
+                                    closure = (convective_adjustment, horizontal_diffusivity),
                                     tracers = (:b, :e, :c),
                                     boundary_conditions = (b=b_bcs, u=u_bcs, v=v_bcs),
                                     forcing = (; b=Fb))
