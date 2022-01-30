@@ -19,7 +19,7 @@ using Oceananigans.TurbulenceClosures.CATKEVerticalDiffusivities: CATKEVerticalD
 using Random
 Random.seed!(1234)
 
-arch = GPU()
+arch = CPU()
 
 filename = "eddying_channel_catke"
 
@@ -31,7 +31,7 @@ const Lz = 2kilometers    # depth [m]
 # number of grid points
 Nx = 100
 Ny = 200
-Nz = 80
+Nz = 60
 
 save_fields_interval = 7days
 stop_time = 20years
@@ -50,20 +50,34 @@ stop_time = 20years
 Δz_center_linear(k) = Lz * (σ - 1) * σ^(Nz - k) / (σ^Nz - 1) # k=1 is the bottom-most cell, k=Nz is the top cell
 linearly_spaced_faces(k) = k==1 ? -Lz : - Lz + sum(Δz_center_linear.(1:k-1))
 
+refinement = 2 # controls spacing near surface (higher means finer spaced)
+stretching = 4  # controls rate of stretching at bottom
+
+# Normalized height ranging from 0 to 1
+h(k) = (k - 1) / Nz
+
+# Linear near-surface generator
+ζ₀(k) = 1 + (h(k) - 1) / refinement
+
+# Bottom-intensified stretching function
+Σ(k) = (1 - exp(-stretching * h(k))) / (1 - exp(-stretching))
+
+# Generating function
+z_faces(k) = Lz * (ζ₀(k) * Σ(k) - 1)
+
 grid = RectilinearGrid(arch;
                        topology = (Periodic, Bounded, Bounded),
                        size = (Nx, Ny, Nz),
                        halo = (3, 3, 3),
                        x = (0, Lx),
                        y = (-Ly/2, Ly/2),
-                       z = (-Lz, 0)) #linearly_spaced_faces)
+                       z = z_faces)
 
 # The vertical spacing versus depth for the prescribed grid
-#=
-plot(grid.Δzᵃᵃᶜ[1:Nz], grid.zᵃᵃᶜ[1:Nz],
-     axis=(xlabel = "Vertical spacing (m)",
-           ylabel = "Depth (m)"))
-=#
+# using GLMakie
+# plot(grid.Δzᵃᵃᶜ[1:Nz], grid.zᵃᵃᶜ[1:Nz], marker = :circle,
+#      axis=(xlabel = "Vertical spacing (m)",
+#            ylabel = "Depth (m)"))
 
 @info "Built a grid: $grid."
 
@@ -166,8 +180,8 @@ catke = CATKEVerticalDiffusivity()
 
 model = HydrostaticFreeSurfaceModel(grid = grid,
                                     free_surface = ImplicitFreeSurface(solver_method = :HeptadiagonalIterativeSolver),
-                                    momentum_advection = WENO5(),
-                                    tracer_advection = WENO5(),
+                                    momentum_advection = WENO5(grid = grid, stretched_smoothness = true),
+                                    tracer_advection = WENO5(grid = grid, stretched_smoothness = true),
                                     buoyancy = BuoyancyTracer(),
                                     coriolis = coriolis,
                                     closure = (convective_adjustment, horizontal_diffusivity),
