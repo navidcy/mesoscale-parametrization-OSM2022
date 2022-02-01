@@ -93,7 +93,7 @@ parameters = (Ly = Ly,
               Qᵇ = 10 / (ρ * cᵖ) * α * g,          # buoyancy flux magnitude [m² s⁻³]    
               y_shutoff = 5/6 * Ly,                # shutoff location for buoyancy flux [m]
               τ = 0.15/ρ,                          # surface kinematic wind stress [m² s⁻²]
-              μ = 1 / 15days,                      # bottom drag damping time-scale [s⁻¹]
+              μ = 1 / 30days,                      # bottom drag damping time-scale [s⁻¹]
               ΔB = 8 * α * g,                      # surface vertical buoyancy gradient [s⁻²]
               H = Lz,                              # domain depth [m]
               h = 1000.0,                          # exponential decay scale of stable stratification [m]
@@ -210,7 +210,7 @@ set!(model, b=bᵢ, u=uᵢ, v=vᵢ, w=wᵢ)
 simulation = Simulation(model, Δt=Δt₀, stop_time=stop_time)
 
 # add timestep wizard callback
-wizard = TimeStepWizard(cfl=0.2, max_change=1.1, max_Δt=20minutes)
+wizard = TimeStepWizard(cfl=0.1, max_change=1.1, max_Δt=20minutes)
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(20))
 
 # add progress callback
