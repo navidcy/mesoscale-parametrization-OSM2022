@@ -22,17 +22,17 @@ arch = GPU()
 filename = "eddying_channel_catke"
 
 # Domain
-const Lx = 1000kilometers # zonal domain length [m]
+const Lx = 2000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
 const Lz = 2kilometers    # depth [m]
 
 # number of grid points
-Nx = 100
-Ny = 200
+Nx = 300
+Ny = 300
 Nz = 60
 
 save_fields_interval = 7days
-stop_time = 20years
+stop_time = 40years
 Δt₀ = 5minutes
 
 # stretched grid
@@ -305,8 +305,8 @@ run!(simulation, pickup=false)
 
 @info "Simulation completed in " * prettytime(simulation.run_wall_time)
 
-#=
 
+#=
 #####
 ##### Visualization
 #####
@@ -317,7 +317,7 @@ run!(simulation, pickup=false)
 using GLMakie
 using JLD2
 
-fig = Figure(resolution = (2600, 1400))
+fig = Figure(resolution = (2300, 1400))
 ax_b = fig[1:5, 1] = LScene(fig)
 ax_ζ = fig[1:5, 2] = LScene(fig)
 
@@ -355,7 +355,7 @@ zu = zu .* zscale
 zb = zb .* zscale
 zζ = zζ .* zscale
 
-zonal_slice_displacement = 1.35
+zonal_slice_displacement = 1.5
 
 b_slices = (
       west = @lift(Array(slice_files.west["timeseries/b/"   * string($iter)][1, :, :])),
