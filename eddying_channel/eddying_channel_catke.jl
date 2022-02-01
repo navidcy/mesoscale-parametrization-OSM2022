@@ -3,8 +3,6 @@
 # pushfirst!(LOAD_PATH, @__DIR__)
 # pushfirst!(LOAD_PATH, joinpath(@__DIR__, "..", "..")) # add Oceananigans
 
-ENV["GKSwstype"] = "100"
-
 using Printf
 using Statistics
 using JLD2
@@ -12,7 +10,6 @@ using JLD2
 using Oceananigans
 using Oceananigans.Units
 using Oceananigans.OutputReaders: FieldTimeSeries
-using Oceananigans.Grids: xnode, ynode, znode
 using Oceananigans.TurbulenceClosures: VerticallyImplicitTimeDiscretization
 using Oceananigans.TurbulenceClosures.CATKEVerticalDiffusivities: CATKEVerticalDiffusivity
 
@@ -70,7 +67,7 @@ grid = RectilinearGrid(arch;
                        size = (Nx, Ny, Nz),
                        halo = (3, 3, 3),
                        x = (0, Lx),
-                       y = (-Ly/2, Ly/2),
+                       y = (0, Ly),
                        z = (-Lz, 0)) # z_faces)
 
 # The vertical spacing versus depth for the prescribed grid
@@ -308,31 +305,39 @@ run!(simulation, pickup=false)
 @info "Simulation completed in " * prettytime(simulation.run_wall_time)
 
 #=
+
 #####
 ##### Visualization
 #####
 
-using CairoMakie
+# ENV["GKSwstype"] = "100"
+# using CairoMakie
 
-fig = Figure(resolution = (2000, 1000))
+using GLMakie
+using JLD2
+
+fig = Figure(resolution = (2600, 1400))
 ax_b = fig[1:5, 1] = LScene(fig)
 ax_ζ = fig[1:5, 2] = LScene(fig)
 
+axis_rotation_angles = (π/24, -π/6, 0)
+
 # Extract surfaces on all 6 boundaries
 
-iter = Node(0)
+iter = Observable(0)
+
+zonal_file = jldopen(filename * "_zonal_average.jld2")
+
+slicers = (west = FieldSlicer(i=1),
+           east = FieldSlicer(i=grid.Nx),
+           south = FieldSlicer(j=1),
+           north = FieldSlicer(j=grid.Ny),
+           bottom = FieldSlicer(k=1),
+           top = FieldSlicer(k=grid.Nz))
+
 sides = keys(slicers)
 
-zonal_file = jldopen("eddying_channel_zonal_average.jld2")
-slice_files = NamedTuple(side => jldopen("eddying_channel_$(side)_slice.jld2") for side in sides)
-
-grid = VerticallyStretchedRectilinearGrid(architecture = CPU(),
-                                          topology = (Periodic, Bounded, Bounded),
-                                          size = (Nx, Ny, Nz),
-                                          halo = (3, 3, 3),
-                                          x = (0, Lx),
-                                          y = (0, Ly),
-                                          z_faces = linearly_spaced_faces)
+slice_files = NamedTuple(side => jldopen(filename * "_$(side)_slice.jld2") for side in sides)
 
 # Build coordinates, rescaling the vertical coordinate
 
@@ -373,10 +378,10 @@ u_avg = @lift zonal_file["timeseries/u/" * string($iter)][1, :, :]
 
 clims_u = @lift extrema(zonal_file["timeseries/u/" * string($iter)][1, :, :])
 
-contour!(ax_b, yb, zb, b_avg; levels = 25, color = :black, linewidth = 2, transformation = (:yz, zonal_slice_displacement * xb[end]), show_axis=false)
 surface!(ax_b, yu, zu, u_avg; transformation = (:yz, zonal_slice_displacement * xu[end]), colorrange=clims_u, colormap=:balance)
+contour!(ax_b, yb, zb, b_avg; levels = 25, color = :black, linewidth = 2, transformation = (:yz, zonal_slice_displacement * xb[end]), show_axis=false)
 
-rotate_cam!(ax_b.scene, (π/24, -π/6, 0))
+rotate_cam!(ax_b.scene, axis_rotation_angles)
 
 ζ_slices = (
       west = @lift(Array(slice_files.west["timeseries/ζ/"   * string($iter)][1, :, :])),
@@ -398,39 +403,35 @@ u_slices = (
 
 clims_ζ = @lift extrema(slice_files.top["timeseries/ζ/" * string($iter)][:])
 kwargs_ζ = (colormap=:curl, show_axis=false)
-clims_u = @lift extrema(slice_files.top["timeseries/u/" * string($iter)][:])
-kwargs_u = (colormap=:balance, show_axis=false)
 
-surface!(ax_ζ, yu, zu, u_slices.west;   transformation = (:yz, xu[1]),   kwargs_u...)
-surface!(ax_ζ, yu, zu, u_slices.east;   transformation = (:yz, xu[end]), kwargs_u...)
-surface!(ax_ζ, xu, zu, u_slices.south;  transformation = (:xz, yu[1]),   kwargs_u...)
-surface!(ax_ζ, xu, zu, u_slices.north;  transformation = (:xz, yu[end]), kwargs_u...)
-surface!(ax_ζ, xu, yu, u_slices.bottom; transformation = (:xy, zu[1]),   kwargs_u...)
-surface!(ax_ζ, xu, yu, u_slices.top;    transformation = (:xy, zu[end]), kwargs_u...)
+surface!(ax_ζ, yζ, zζ, ζ_slices.west;   transformation = (:yz, xu[1]),   kwargs_ζ...)
+surface!(ax_ζ, yu, zu, u_slices.east;   transformation = (:yz, xu[end]), kwargs_ζ...)
+surface!(ax_ζ, xζ, zζ, ζ_slices.south;  transformation = (:xz, yu[1]),   kwargs_ζ...)
+surface!(ax_ζ, xζ, zζ, ζ_slices.north;  transformation = (:xz, yu[end]), kwargs_ζ...)
+surface!(ax_ζ, xζ, yζ, ζ_slices.bottom; transformation = (:xy, zu[1]),   kwargs_ζ...)
+surface!(ax_ζ, xζ, yζ, ζ_slices.top;    transformation = (:xy, zu[end]), kwargs_ζ...)
 
 b_avg = @lift zonal_file["timeseries/b/" * string($iter)][1, :, :]
 u_avg = @lift zonal_file["timeseries/u/" * string($iter)][1, :, :]
 
 clims_u = @lift extrema(zonal_file["timeseries/u/" * string($iter)][1, :, :])
 
-contour!(ax_ζ, yb, zb, b_avg; levels = 25, color = :black, linewidth = 2, transformation = (:yz, zonal_slice_displacement * xb[end]), show_axis=false)
 surface!(ax_ζ, yu, zu, u_avg; transformation = (:yz, zonal_slice_displacement * xu[end]), colorrange=clims_u, colormap=:balance)
+contour!(ax_ζ, yb, zb, b_avg; levels = 25, color = :black, linewidth = 2, transformation = (:yz, zonal_slice_displacement * xb[end]), show_axis=false)
 
-rotate_cam!(ax_ζ.scene, (π/24, -π/6, 0))
+rotate_cam!(ax_ζ.scene, axis_rotation_angles)
 
-title = @lift(string("Buoyancy and zonally-averaged u at t = ",
+title = @lift(string("Buoyancy and relative vorticity at t = ",
                      prettytime(zonal_file["timeseries/t/" * string($iter)])))
 
-fig[0, :] = Label(fig, title, textsize=30)
+fig[0, :] = Label(fig, title, textsize=50)
 
 iterations = parse.(Int, keys(zonal_file["timeseries/t"]))
 
-record(fig, "eddying_channel_u.mp4", iterations, framerate=12) do i
+record(fig, "eddying_channel.mp4", iterations, framerate=12) do i
     @info "Plotting iteration $i of $(iterations[end])..."
     iter[] = i
 end
-
-display(fig)
 
 for file in slice_files
     close(file)
