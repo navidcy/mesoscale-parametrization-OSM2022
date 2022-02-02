@@ -27,8 +27,8 @@ const Ly = 2000kilometers # meridional domain length [m]
 const Lz = 2kilometers    # depth [m]
 
 # number of grid points
-Nx = 300
-Ny = 300
+Nx = 200
+Ny = 200
 Nz = 60
 
 save_fields_interval = 7days
