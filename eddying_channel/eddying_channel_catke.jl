@@ -32,7 +32,7 @@ Ny = 300
 Nz = 60
 
 save_fields_interval = 7days
-stop_time = 20years
+stop_time = 20years + 1day
 Δt₀ = 5minutes
 
 # stretched grid

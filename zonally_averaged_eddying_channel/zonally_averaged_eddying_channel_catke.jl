@@ -1,8 +1,3 @@
-# using Pkg
-# pkg"add Oceananigans CairoMakie JLD2"
-# ENV["GKSwstype"] = "100"
-# pushfirst!(LOAD_PATH, @__DIR__)
-# pushfirst!(LOAD_PATH, joinpath(@__DIR__, "..", "..")) # add Oceananigans
 
 using Printf
 using Statistics
@@ -11,29 +6,29 @@ using JLD2
 using Oceananigans
 using Oceananigans.Units
 using Oceananigans.OutputReaders: FieldTimeSeries
-using Oceananigans.TurbulenceClosures.CATKEVerticalDiffusivities: CATKEVerticalDiffusivity
 using Oceananigans.Grids: xnode, ynode, znode
 using Oceananigans.TurbulenceClosures: VerticallyImplicitTimeDiscretization
+using Oceananigans.TurbulenceClosures.CATKEVerticalDiffusivities: CATKEVerticalDiffusivity
 
 using Random
 Random.seed!(1234)
 
 arch = GPU()
 
-filename = "zonally_averaged_eddying_channel_catke_withGM"
+filename = "zonally_averaged_channel_catke"
 
 # Domain
 const Ly = 2000kilometers # meridional domain length [m]
 const Lz = 2kilometers    # depth [m]
 
 # number of grid points
-Nx = 1
-Ny = 200
-Nz = 80
+Ny = 300
+Nz = 60
 
 save_fields_interval = 7days
-stop_time = 20years
+stop_time = 20years + 1day
 Δt₀ = 5minutes
+
 
 # stretched grid
 
@@ -44,16 +39,31 @@ stop_time = 20years
 
 # Given Lz and stretching factor σ > 1 the top cell height is Δzₜₒₚ = Lz * (σ - 1) / σ^(Nz - 1)
 
-σ = 1.1 # linear stretching factor
+σ = 1.04 # linear stretching factor
 Δz_center_linear(k) = Lz * (σ - 1) * σ^(Nz - k) / (σ^Nz - 1) # k=1 is the bottom-most cell, k=Nz is the top cell
 linearly_spaced_faces(k) = k==1 ? -Lz : - Lz + sum(Δz_center_linear.(1:k-1))
+
+refinement = 2 # controls spacing near surface (higher means finer spaced)
+stretching = 4  # controls rate of stretching at bottom
+
+# Normalized height ranging from 0 to 1
+h(k) = (k - 1) / Nz
+
+# Linear near-surface generator
+ζ₀(k) = 1 + (h(k) - 1) / refinement
+
+# Bottom-intensified stretching function
+Σ(k) = (1 - exp(-stretching * h(k))) / (1 - exp(-stretching))
+
+# Generating function
+z_faces(k) = Lz * (ζ₀(k) * Σ(k) - 1)
 
 grid = RectilinearGrid(arch;
                        topology = (Flat, Bounded, Bounded),
                        size = (Ny, Nz),
                        halo = (3, 3),
                        y = (0, Ly),
-                       z = (-Lz, 0)) #linearly_spaced_faces)
+                       z = (-Lz, 0)) # z_faces)
 
 # The vertical spacing versus depth for the prescribed grid
 #=
@@ -68,22 +78,22 @@ plot(grid.Δzᵃᵃᶜ[1:Nz], grid.zᵃᵃᶜ[1:Nz],
 ##### Boundary conditions
 #####
 
-α  = 2e-4     # [K⁻¹] thermal expansion coefficient 
+α  = 2e-4     # [K⁻¹] thermal expansion coefficient
 g  = 9.8061   # [m s⁻²] gravitational constant
 cᵖ = 3994.0   # [J K⁻¹] heat capacity
 ρ  = 1024.0   # [kg m⁻³] reference density
 
-parameters = (Ly = Ly,  
-              Lz = Lz,    
+parameters = (Ly = Ly,
+              Lz = Lz,
               Qᵇ = 10 / (ρ * cᵖ) * α * g,          # buoyancy flux magnitude [m² s⁻³]    
               y_shutoff = 5/6 * Ly,                # shutoff location for buoyancy flux [m]
-              τ = 0.2/ρ,                           # surface kinematic wind stress [m² s⁻²]
+              τ = 0.15/ρ,                          # surface kinematic wind stress [m² s⁻²]
               μ = 1 / 30days,                      # bottom drag damping time-scale [s⁻¹]
               ΔB = 8 * α * g,                      # surface vertical buoyancy gradient [s⁻²]
               H = Lz,                              # domain depth [m]
               h = 1000.0,                          # exponential decay scale of stable stratification [m]
               y_sponge = 19/20 * Ly,               # southern boundary of sponge layer [m]
-              λt = 7.0days                         # relaxation time scale [s]
+              λt = 7days                           # relaxation time scale [s]
 )
 
 @inline function buoyancy_flux(i, j, grid, clock, model_fields, p)
@@ -173,7 +183,6 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
                                     tracer_advection = WENO5(),
                                     buoyancy = BuoyancyTracer(),
                                     coriolis = coriolis,
-                                    #closure = (diffusive_closure, convective_adjustment, gent_mcwilliams_diffusivity),
                                     closure = (catke, diffusive_closure, gent_mcwilliams_diffusivity),
                                     tracers = (:b, :e, :c),
                                     boundary_conditions = (b=b_bcs, u=u_bcs, v=v_bcs),
@@ -207,7 +216,7 @@ set!(model, b=bᵢ, u=uᵢ, v=vᵢ, w=wᵢ, c=cᵢ)
 simulation = Simulation(model, Δt=Δt₀, stop_time=stop_time)
 
 # add timestep wizard callback
-wizard = TimeStepWizard(cfl=0.2, max_change=1.1, max_Δt=20minutes)
+wizard = TimeStepWizard(cfl=0.1, max_change=1.1, max_Δt=20minutes)
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(20))
 
 # add progress callback
@@ -258,7 +267,7 @@ vb = Field(vb_op)
 wb = Field(wb_op)
 ∇_q = Field(∇_q_op)
 
-outputs = (; b, c, u, v, w, vb, wb, ∇_q)
+outputs = (; b, u, v, w, c, vb, wb, ∇_q)
 
 # #####
 # ##### Build checkpointer and output writer
