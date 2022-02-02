@@ -259,14 +259,14 @@ w′b′ = Field(Average(w′ * b′, dims=1))
 
 outputs = (; b, c, ζ, u, v, w)
 
-averaged_outputs = (; v′b′, w′b′, B, U)
+zonally_averaged_outputs = (b=B, u=U, v=V, w=W, c=C, vb=v′b′, wb=w′b′)
 
 #####
 ##### Build checkpointer and output writer
 #####
 
 simulation.output_writers[:checkpointer] = Checkpointer(model,
-                                                        schedule = TimeInterval(5years),
+                                                        schedule = TimeInterval(10years),
                                                         prefix = filename,
                                                         force = true)
 
@@ -287,7 +287,7 @@ for side in keys(slicers)
                                                        force = true)
 end
 
-simulation.output_writers[:zonal] = JLD2OutputWriter(model, (b=B, u=U, v=V, w=W, vb=v′b′, wb=w′b′),
+simulation.output_writers[:zonal] = JLD2OutputWriter(model, zonally_averaged_outputs,
                                                      schedule = TimeInterval(save_fields_interval),
                                                      prefix = filename * "_zonal_average",
                                                      force = true)
