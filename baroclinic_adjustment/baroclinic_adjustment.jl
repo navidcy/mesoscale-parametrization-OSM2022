@@ -69,7 +69,7 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
                                     tracers = (:b, :c),
                                     momentum_advection = WENO5(),
                                     tracer_advection = WENO5(),
-                                    free_surface = ImplicitFreeSurface(solver_method = :HeptadiagonalIterativeSolver))
+                                    free_surface = ImplicitFreeSurface())
 
 @info "Built $model."
 

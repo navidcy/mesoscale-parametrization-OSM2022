@@ -177,7 +177,7 @@ catke = CATKEVerticalDiffusivity()
 @info "Building a model..."
 
 model = HydrostaticFreeSurfaceModel(grid = grid,
-                                    free_surface = ImplicitFreeSurface(solver_method = :HeptadiagonalIterativeSolver),
+                                    free_surface = ImplicitFreeSurface(),
                                     momentum_advection = WENO5(),
                                     tracer_advection = WENO5(),
                                     buoyancy = BuoyancyTracer(),
@@ -241,12 +241,14 @@ simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterv
 
 u, v, w = model.velocities
 b, c = model.tracers.b, model.tracers.c
+η = model.free_surface.η
 
 ζ = Field(∂x(v) - ∂y(u))
 
 B = Field(Average(b, dims=1))
 C = Field(Average(c, dims=1))
 U = Field(Average(u, dims=1))
+η̄ = Field(Average(η, dims=1))
 V = Field(Average(v, dims=1))
 W = Field(Average(w, dims=1))
 
@@ -254,12 +256,13 @@ b′ = b - B
 v′ = v - V
 w′ = w - W
 
+b′b′ = Field(Average(b′ * b′, dims=1))
 v′b′ = Field(Average(v′ * b′, dims=1))
 w′b′ = Field(Average(w′ * b′, dims=1))
 
 outputs = (; b, c, ζ, u, v, w)
 
-zonally_averaged_outputs = (b=B, u=U, v=V, w=W, c=C, vb=v′b′, wb=w′b′)
+zonally_averaged_outputs = (b=B, u=U, v=V, w=W, c=C, η=η̄, vb=v′b′, wb=w′b′, bb=b′b′)
 
 #####
 ##### Build checkpointer and output writer
@@ -270,32 +273,35 @@ simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                         prefix = filename,
                                                         force = true)
 
-# slicers = (west = FieldSlicer(i=1),
-#            east = FieldSlicer(i=grid.Nx),
-#            south = FieldSlicer(j=1),
-#            north = FieldSlicer(j=grid.Ny),
-#            bottom = FieldSlicer(k=1),
-#            top = FieldSlicer(k=grid.Nz))
+slicers = (west = FieldSlicer(i=1),
+           east = FieldSlicer(i=grid.Nx),
+           south = FieldSlicer(j=1),
+           north = FieldSlicer(j=grid.Ny),
+           bottom = FieldSlicer(k=1),
+           top = FieldSlicer(k=grid.Nz))
 
-# for side in keys(slicers)
-#     field_slicer = slicers[side]
+for side in keys(slicers)
+    field_slicer = slicers[side]
 
-#     simulation.output_writers[side] = JLD2OutputWriter(model, outputs,
-#                                                        schedule = TimeInterval(save_fields_interval),
-#                                                        field_slicer = field_slicer,
-#                                                        prefix = filename * "_$(side)_slice",
-#                                                        force = true)
-# end
+    simulation.output_writers[side] = JLD2OutputWriter(model, outputs,
+                                                       schedule = TimeInterval(save_fields_interval),
+                                                       field_slicer = field_slicer,
+                                                       prefix = filename * "_$(side)_slice",
+                                                       force = true)
+end
 
-# simulation.output_writers[:zonal] = JLD2OutputWriter(model, zonally_averaged_outputs,
-#                                                      schedule = TimeInterval(save_fields_interval),
-#                                                      prefix = filename * "_zonal_average",
-#                                                      force = true)
+simulation.output_writers[:zonal] = JLD2OutputWriter(model, zonally_averaged_outputs,
+                                                     schedule = TimeInterval(save_fields_interval),
+                                                     prefix = filename * "_zonal_average",
+                                                     force = true)
 
+#=
 simulation.output_writers[:zonal] = JLD2OutputWriter(model, zonally_averaged_outputs,
                                                      schedule = AveragedTimeInterval(60days),
                                                      prefix = filename * "_zonal_time_average",
                                                      force = true)
+=#
+
 #=
 simulation.output_writers[:averages] = JLD2OutputWriter(model, averaged_outputs,
                                                         schedule = AveragedTimeInterval(1days, window=1days, stride=1),
@@ -306,9 +312,10 @@ simulation.output_writers[:averages] = JLD2OutputWriter(model, averaged_outputs,
 
 @info "Running the simulation..."
 
-simulation.stop_time += 61days
+run!(simulation, pickup=false)
 
-run!(simulation, pickup=true)
+# simulation.stop_time += 61days
+# run!(simulation, pickup=true)
 
 @info "Simulation completed in " * prettytime(simulation.run_wall_time)
 

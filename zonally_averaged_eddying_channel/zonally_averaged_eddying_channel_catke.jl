@@ -178,7 +178,7 @@ gent_mcwilliams_diffusivity = IsopycnalSkewSymmetricDiffusivity(κ_skew = 1000,
 
 
 model = HydrostaticFreeSurfaceModel(grid = grid,
-                                    free_surface = ImplicitFreeSurface(solver_method = :HeptadiagonalIterativeSolver),
+                                    free_surface = ImplicitFreeSurface(),
                                     momentum_advection = WENO5(),
                                     tracer_advection = WENO5(),
                                     buoyancy = BuoyancyTracer(),
@@ -216,7 +216,7 @@ set!(model, b=bᵢ, u=uᵢ, v=vᵢ, w=wᵢ, c=cᵢ)
 simulation = Simulation(model, Δt=Δt₀, stop_time=stop_time)
 
 # add timestep wizard callback
-wizard = TimeStepWizard(cfl=0.1, max_change=1.1, max_Δt=20minutes)
+wizard = TimeStepWizard(cfl=0.10, max_change=1.1, max_Δt=20minutes)
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(20))
 
 # add progress callback
