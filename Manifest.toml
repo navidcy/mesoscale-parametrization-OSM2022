@@ -888,9 +888,7 @@ version = "0.4.0"
 
 [[Oceananigans]]
 deps = ["Adapt", "CUDA", "CUDAKernels", "Crayons", "CubedSphere", "Dates", "DocStringExtensions", "FFTW", "Glob", "IncompleteLU", "InteractiveUtils", "IterativeSolvers", "JLD2", "KernelAbstractions", "LinearAlgebra", "Logging", "MPI", "NCDatasets", "OffsetArrays", "OrderedCollections", "PencilFFTs", "Pkg", "Printf", "Random", "Rotations", "SafeTestsets", "SeawaterPolynomials", "SparseArrays", "Statistics", "StructArrays", "Tullio"]
-git-tree-sha1 = "eb1a8c6d9605655d5d49891f7f1d3d3240f3eca4"
-repo-rev = "glw/hydrostatic-checkpointer"
-repo-url = "https://github.com/CliMA/Oceananigans.jl.git"
+git-tree-sha1 = "c3e89b6c9c9c539eafbacdee10938224de2a0568"
 uuid = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
 version = "0.70.1"
 
