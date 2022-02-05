@@ -270,26 +270,31 @@ simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                         prefix = filename,
                                                         force = true)
 
-slicers = (west = FieldSlicer(i=1),
-           east = FieldSlicer(i=grid.Nx),
-           south = FieldSlicer(j=1),
-           north = FieldSlicer(j=grid.Ny),
-           bottom = FieldSlicer(k=1),
-           top = FieldSlicer(k=grid.Nz))
+# slicers = (west = FieldSlicer(i=1),
+#            east = FieldSlicer(i=grid.Nx),
+#            south = FieldSlicer(j=1),
+#            north = FieldSlicer(j=grid.Ny),
+#            bottom = FieldSlicer(k=1),
+#            top = FieldSlicer(k=grid.Nz))
 
-for side in keys(slicers)
-    field_slicer = slicers[side]
+# for side in keys(slicers)
+#     field_slicer = slicers[side]
 
-    simulation.output_writers[side] = JLD2OutputWriter(model, outputs,
-                                                       schedule = TimeInterval(save_fields_interval),
-                                                       field_slicer = field_slicer,
-                                                       prefix = filename * "_$(side)_slice",
-                                                       force = true)
-end
+#     simulation.output_writers[side] = JLD2OutputWriter(model, outputs,
+#                                                        schedule = TimeInterval(save_fields_interval),
+#                                                        field_slicer = field_slicer,
+#                                                        prefix = filename * "_$(side)_slice",
+#                                                        force = true)
+# end
+
+# simulation.output_writers[:zonal] = JLD2OutputWriter(model, zonally_averaged_outputs,
+#                                                      schedule = TimeInterval(save_fields_interval),
+#                                                      prefix = filename * "_zonal_average",
+#                                                      force = true)
 
 simulation.output_writers[:zonal] = JLD2OutputWriter(model, zonally_averaged_outputs,
-                                                     schedule = TimeInterval(save_fields_interval),
-                                                     prefix = filename * "_zonal_average",
+                                                     schedule = AveragedTimeInterval(60days),
+                                                     prefix = filename * "_zonal_time_average",
                                                      force = true)
 #=
 simulation.output_writers[:averages] = JLD2OutputWriter(model, averaged_outputs,
@@ -301,12 +306,14 @@ simulation.output_writers[:averages] = JLD2OutputWriter(model, averaged_outputs,
 
 @info "Running the simulation..."
 
-run!(simulation, pickup=false)
+simulation.stop_time += 61days
+
+run!(simulation, pickup=true)
 
 @info "Simulation completed in " * prettytime(simulation.run_wall_time)
 
-
 #=
+
 #####
 ##### Visualization
 #####
@@ -404,15 +411,16 @@ u_slices = (
        top = @lift(Array(slice_files.top["timeseries/u/"    * string($iter)][:, :, 1]))
 )
 
-clims_ζ = @lift extrema(slice_files.top["timeseries/ζ/" * string($iter)][:])
-kwargs_ζ = (colormap=:curl, show_axis=false)
+# clims_ζ = @lift extrema(slice_files.west["timeseries/ζ/" * string($iter)][:])
+clims_ζ = (-6e-5, 6e-5)
+kwargs_ζ = (colorrange = clims_ζ, colormap=:curl, show_axis=false)
 
-surface!(ax_ζ, yζ, zζ, ζ_slices.west;   transformation = (:yz, xu[1]),   kwargs_ζ...)
-surface!(ax_ζ, yu, zu, u_slices.east;   transformation = (:yz, xu[end]), kwargs_ζ...)
-surface!(ax_ζ, xζ, zζ, ζ_slices.south;  transformation = (:xz, yu[1]),   kwargs_ζ...)
-surface!(ax_ζ, xζ, zζ, ζ_slices.north;  transformation = (:xz, yu[end]), kwargs_ζ...)
-surface!(ax_ζ, xζ, yζ, ζ_slices.bottom; transformation = (:xy, zu[1]),   kwargs_ζ...)
-surface!(ax_ζ, xζ, yζ, ζ_slices.top;    transformation = (:xy, zu[end]), kwargs_ζ...)
+surface!(ax_ζ, yζ, zζ, ζ_slices.west;   transformation = (:yz, xζ[1]),   kwargs_ζ...)
+surface!(ax_ζ, yζ, zζ, ζ_slices.east;   transformation = (:yz, xζ[end]), kwargs_ζ...)
+surface!(ax_ζ, xζ, zζ, ζ_slices.south;  transformation = (:xz, yζ[1]),   kwargs_ζ...)
+surface!(ax_ζ, xζ, zζ, ζ_slices.north;  transformation = (:xz, yζ[end]), kwargs_ζ...)
+surface!(ax_ζ, xζ, yζ, ζ_slices.bottom; transformation = (:xy, zζ[1]),   kwargs_ζ...)
+surface!(ax_ζ, xζ, yζ, ζ_slices.top;    transformation = (:xy, zζ[end]), kwargs_ζ...)
 
 b_avg = @lift zonal_file["timeseries/b/" * string($iter)][1, :, :]
 u_avg = @lift zonal_file["timeseries/u/" * string($iter)][1, :, :]
@@ -431,7 +439,7 @@ fig[0, :] = Label(fig, title, textsize=50)
 
 iterations = parse.(Int, keys(zonal_file["timeseries/t"]))
 
-record(fig, "eddying_channel.mp4", iterations, framerate=12) do i
+record(fig, "eddying_channel_2.mp4", iterations, framerate=12) do i
     @info "Plotting iteration $i of $(iterations[end])..."
     iter[] = i
 end
