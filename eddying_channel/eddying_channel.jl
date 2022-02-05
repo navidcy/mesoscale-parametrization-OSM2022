@@ -17,7 +17,7 @@ using Oceananigans.TurbulenceClosures.CATKEVerticalDiffusivities: CATKEVerticalD
 using Random
 Random.seed!(1234)
 
-arch = CPU()
+arch = GPU()
 
 filename = "eddying_channel_catke"
 
@@ -32,7 +32,7 @@ Ny = 128
 Nz = 60
 
 save_fields_interval = 7days
-stop_time = 5years + 1day
+stop_time = 20years + 1day
 Δt₀ = 5minutes
 
 # stretched grid
@@ -182,8 +182,8 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
                                     tracer_advection = WENO5(),
                                     buoyancy = BuoyancyTracer(),
                                     coriolis = coriolis,
-                                    closure = (catke, diffusive_closure),
-                                    tracers = (:b, :e, :c),
+                                    closure = (convective_adjustment, diffusive_closure),
+                                    tracers = (:b, :c),
                                     boundary_conditions = (b=b_bcs, u=u_bcs, v=v_bcs),
                                     forcing = (; b=Fb))
 
