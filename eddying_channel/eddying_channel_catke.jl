@@ -201,7 +201,7 @@ uᵢ(x, y, z) = ε(1e-8)
 vᵢ(x, y, z) = ε(1e-8)
 wᵢ(x, y, z) = ε(1e-8)
 
-set!(model, b=bᵢ, u=uᵢ, v=vᵢ, w=wᵢ)
+set!(model, b=bᵢ, u=uᵢ, v=vᵢ, w=wᵢ, c=cᵢ)
 
 #####
 ##### Simulation building
