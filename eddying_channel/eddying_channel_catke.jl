@@ -17,22 +17,22 @@ using Oceananigans.TurbulenceClosures.CATKEVerticalDiffusivities: CATKEVerticalD
 using Random
 Random.seed!(1234)
 
-arch = GPU()
+arch = CPU()
 
 filename = "eddying_channel_catke"
 
 # Domain
-const Lx = 2000kilometers # zonal domain length [m]
+const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
 const Lz = 2kilometers    # depth [m]
 
 # number of grid points
-Nx = 200
-Ny = 200
+Nx = 64
+Ny = 128
 Nz = 60
 
 save_fields_interval = 7days
-stop_time = 20years + 1day
+stop_time = 5years + 1day
 Δt₀ = 5minutes
 
 # stretched grid
