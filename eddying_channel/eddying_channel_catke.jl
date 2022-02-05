@@ -193,13 +193,19 @@ model = HydrostaticFreeSurfaceModel(grid = grid,
 ##### Initial conditions
 #####
 
+
+
 # resting initial condition
 ε(σ) = σ * randn()
 bᵢ(x, y, z) = parameters.ΔB * ( exp(z / parameters.h) - exp(-Lz / parameters.h) ) / (1 - exp(-Lz / parameters.h)) + ε(1e-8)
-cᵢ(x, y, z) = exp(-(y - Ly/2)^2 / 2Δc^2) * exp(-(z + Lz/4)^2 / 2Δz^2)
 uᵢ(x, y, z) = ε(1e-8)
 vᵢ(x, y, z) = ε(1e-8)
 wᵢ(x, y, z) = ε(1e-8)
+
+Δy = 100kilometers
+Δz = 100
+Δc = 2Δy
+cᵢ(x, y, z) = exp(-(y - Ly/2)^2 / 2Δc^2) * exp(-(z + Lz/4)^2 / 2Δz^2)
 
 set!(model, b=bᵢ, u=uᵢ, v=vᵢ, w=wᵢ, c=cᵢ)
 
