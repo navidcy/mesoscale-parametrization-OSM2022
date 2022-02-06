@@ -19,15 +19,15 @@ Random.seed!(1234)
 
 arch = GPU()
 
-filename = "eddying_channel_catke"
+filename = "eddying_channel_convadj"
 
 # Domain
-const Lx = 1000kilometers # zonal domain length [m]
+const Lx = 2000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
 const Lz = 2kilometers    # depth [m]
 
 # number of grid points
-Nx = 64
+Nx = 128
 Ny = 128
 Nz = 60
 
@@ -326,7 +326,6 @@ run!(simulation, pickup=false)
 @info "Simulation completed in " * prettytime(simulation.run_wall_time)
 
 #=
-
 #####
 ##### Visualization
 #####
@@ -347,7 +346,7 @@ axis_rotation_angles = (π/24, -π/6, 0)
 
 iter = Observable(0)
 
-filename = "eddying_channel_catke"
+filename = "eddying_channel_convadj"
 
 zonal_file = jldopen(filename * "_zonal_average.jld2")
 
@@ -452,7 +451,7 @@ fig[0, :] = Label(fig, title, textsize=50)
 
 iterations = parse.(Int, keys(zonal_file["timeseries/t"]))
 
-record(fig, "eddying_channel_2.mp4", iterations, framerate=12) do i
+record(fig, "eddying_channel_convadj.mp4", iterations, framerate=12) do i
     @info "Plotting iteration $i of $(iterations[end])..."
     iter[] = i
 end
